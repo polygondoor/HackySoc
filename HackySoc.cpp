@@ -24,11 +24,9 @@
 #define EMAIL_FROM_BASE64 "aGFoYW5ldF8xQHBvbHlnb25kb29yLmNvbS5hdQ=="  // etienne@polygondoor.com.au
 #define EMAIL_PASSWORD_BASE64 "Smh+QHV+cXlMbmMh"  // 
 
-char EMAIL_TO[]  = "edeleflie@gmail.com";
-char SUBJECT[]  = "A polygon door has opened";
-char EMAIL_CONTENT[]  = "Hello,\r\n This seems to have worked OK! :)";
-
 int step_SMTP = 0;
+
+String from = "hahanet_1@polygondoor.com.au";
 
 // Constructor /////////////////////////////////////////////////////////////////
 // Function that handles the creation and setup of instances
@@ -95,18 +93,6 @@ bool HackySoc::connectToAP(String ssid, String pwd)
 
 }
 
-bool HackySoc::sendMessage(String recipient, String subject, String body) {
-  Serial.println(F(" >>>>> SEND MESSAGE CALLED"));
-  while (step_SMTP != -1) {
-    if(do_next_SMP_step()){ // execute the next command
-      step_SMTP++; // increment the count so that the next command will be executed next time.
-    }
-  }
-
-  return true;
-
-}
-
 // Private Methods /////////////////////////////////////////////////////////////
 // Functions only available to other functions in this library
 
@@ -154,116 +140,210 @@ int HackySoc::countInbox(void){
 
 }
 
-// do_next executes the SMTP command in the order required.
-bool HackySoc::do_next_SMP_step(void)
-{
-    switch(step_SMTP){ 
-    case 0:
-        Serial.println(F("Connecting..."));
-        return wifi->createTCP(SMTP_HOST, SMTP_PORT);
-        break;
-        
-    case 1:
-      Serial.println(F("Sending 'EHLO'..."));
-        return wifi->sendAndCheck("EHLO localhost", F("250"));
-        break;
+// maximum number of attempts for each step in sending email
+int max_atempts = 8;
+int attempts;
+
+bool HackySoc::sendMessage(String recipient, String subject, String body) {
+
+  bool try_again = true;
+
+  Serial.println(F(" >>>>> SENDING MESSAGE"));
+
+  // Attempt to create TCP
+  Serial.print("create TCP");
+  do {
+    wifi->createTCP(SMTP_HOST, SMTP_PORT) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error creating TCP connection"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+  
+  try_again = true; attempts = 0;
+
+  // EHLO
+  Serial.println(""); Serial.print("Write EHLO");
+  do {
+    wifi->sendAndCheck("EHLO localhost", F("250")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error sending 'EHLO'"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+  Serial.println("");
+  try_again = true; attempts = 0;
    
-    case 2:
-      Serial.println(F("AUTH LOGIN ..."));
-        return wifi->sendAndCheck(F("AUTH LOGIN"),F("334 VXNlcm5hbWU6"));
-        break;
+  // AUTH LOGIN
+  Serial.println(""); Serial.print("AUTH LOGIN");
+  do {
+    wifi->sendAndCheck(F("AUTH LOGIN"),F("334 VXNlcm5hbWU6")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error calling AUTH LOGIN"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+  Serial.println("");
+  try_again = true; attempts = 0;
 
-    case 3:
-      Serial.println(F("Sending User name"));
-        return wifi->sendAndCheck(EMAIL_FROM_BASE64,F("334 UGFzc3dvcmQ6")); 
-        break;
-              
-    case 4:
-      Serial.println(F("Sending passowrd User name"));
-        return wifi->sendAndCheck(EMAIL_PASSWORD_BASE64,F("235"));
-        break;
-          
-    case 5:{
-        Serial.println(F("Setting FROM ... "));
-        char mailFrom[50] = "MAIL FROM:<"; // If 50 is not long enough change it, do the same for the array in the other cases
-        strcat(mailFrom,EMAIL_FROM);
-        strcat(mailFrom,">");
+  // Username
+  Serial.println(""); Serial.print("Send Username");
+  do {
+    wifi->sendAndCheck(EMAIL_FROM_BASE64,F("334 UGFzc3dvcmQ6")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error sending User name"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
 
-        return wifi->sendAndCheck(mailFrom,F("250"));
-        break;
-    }  
-    case 6:{
-        Serial.println(F("Setting TO ... "));
-        char rcptTo[50] = "RCPT TO:<";
-        strcat(rcptTo,EMAIL_TO);
-        strcat(rcptTo,">");
-        return wifi->sendAndCheck(rcptTo,F("250"));
-        break;
-    }  
-    case 7:
-        Serial.println(F("Call DATA command... "));
-        // Send "DATA"  command, the server will reply with something like "334 end message with \r\n.\r\n."
-        return wifi->sendAndCheck(F("DATA"),F("354"));
-        break;
+  try_again = true; attempts = 0;
+
+  // password
+  Serial.println(""); Serial.print("Send password");
+  do {
+    wifi->sendAndCheck(EMAIL_PASSWORD_BASE64,F("235")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error with password"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // FROM
+  Serial.println(""); Serial.print("Send FROM");
+  do {
+    char mailFrom[50] = "MAIL FROM:<"; // If 50 is not long enough change it, do the same for the array in the other cases
+    strcat(mailFrom,EMAIL_FROM);
+    strcat(mailFrom,">");
+
+    wifi->sendAndCheck(mailFrom,F("250")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error setting FROM"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
         
-    case 8:{
-        Serial.println(F("Apply FROM header ... "));
-        // apply "FROM: from_name <from_email@domain.com>" header
-        char from[100] = "FROM: ";
-        strcat(from,EMAIL_FROM);
-        strcat(from," ");
-        strcat(from,"<");
-        strcat(from,EMAIL_FROM);
-        strcat(from,">");
-        return wifi->sendAndCheck(from);  
-        break;
-    }   
-    case 9:{
-        Serial.println(F("Apply TO header ... "));
-        // apply TO header 
-        char to[100] = "TO: ";
-        strcat(to,EMAIL_TO);
-        strcat(to,"<");
-        strcat(to,EMAIL_TO);
-        strcat(to,">");
-        return wifi->sendAndCheck(to);  
-        break;
-    }
-    case 10:{
-        Serial.println(F("Apply SUBJECT header ... "));
-        // apply SUBJECT header
-        char subject[50] = "SUBJECT: ";
-        strcat(subject,SUBJECT);
-        return wifi->sendAndCheck(subject);
-        break;
-    }
-    case 11:
-        Serial.println(F("Mark end of Header ... "));
-        return wifi->sendAndCheck(F("\r\n"));
-        break;
-    case 12:
-        Serial.println(F("Send CONTENT ... "));
-        return wifi->sendAndCheck(EMAIL_CONTENT);
-        break;
-    case 13:
-        return wifi->sendAndCheck("\r\n."); 
-        break;
-    case 14:
-        Serial.println(F("SAY QUIT ... "));
-        return wifi->sendAndCheck("QUIT");
-        break;
-    case 15:
-        Serial.println(F("Release TCP ... "));
-        wifi->releaseTCP();
-        return true;
-        break;
-    case 16:
-        Serial.println(F("Done!"));
-        step_SMTP = -1;
-        return false; // we don't want to increment the count
-        break;
-    default:
-        break;
-        }
-}
+  // TO
+  Serial.println(""); Serial.print("Send TO");
+  do {
+    wifi->sendAndCheck( "RCPT TO:<" + recipient + ">" ,F("250")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error setting TO"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
 
+  try_again = true; attempts = 0;
+
+  // DATA
+  Serial.println(""); Serial.print("Send DATA");
+  do {
+    wifi->sendAndCheck(F("DATA"),F("354")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error sending data"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // FROM
+  Serial.println(""); Serial.print("Send FROM");
+  do {
+    wifi->sendAndCheck("FROM: " +  from +  " <" +  from + ">" ) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error setting FROM"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // TO
+  Serial.println(""); Serial.print("Send TO");
+  do {
+    wifi->sendAndCheck( "TO: " + recipient + "<" + recipient + ">" ) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error setting TO"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // SUBJECT
+  Serial.println(""); Serial.print("Send SUBJECT");
+  do {
+    wifi->sendAndCheck( "SUBJECT: " + subject ) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error setting Subject"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // END of header
+  Serial.println(""); Serial.print("Send end of header");
+  do {
+    wifi->sendAndCheck(F("\r\n")) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error marking end of header"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // CONTENT
+  Serial.println(""); Serial.print("Send CONTENT");
+  do {
+    wifi->sendAndCheck(body) ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error sending content"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // ENd of content
+  Serial.println(""); Serial.print("CONTENT END");
+  do {
+    wifi->sendAndCheck("\r\n.") ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Error sending end of content"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // Quit TCP connection
+  Serial.println(""); Serial.print("QUIT");
+  do {
+    wifi->sendAndCheck("QUIT") ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Could not say quit"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  try_again = true; attempts = 0;
+
+  // Release TCP
+  Serial.println(""); Serial.print("Close TCP :)");
+  do {
+    wifi->releaseTCP() ? try_again = false : attempts++;
+    if ( attempts > max_atempts ) {
+      Serial.println(F("Could not release TCP"));
+      return false;
+    } Serial.print(".");
+  } while (try_again);
+
+  Serial.println(F(" >>>>> SENDING MESSAGE DONE"));
+  return true;
+}

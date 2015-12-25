@@ -30,7 +30,6 @@ class HackySoc
     /* The UART to communicate with ESP8266 */
     ESP8266 *wifi; 
     void setESPBaudrate(SoftwareSerial&);
-    bool do_next_SMP_step(void);
    
 };
 
