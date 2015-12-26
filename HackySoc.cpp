@@ -22,11 +22,9 @@
 #define PASS "Jh~@u~qyLnc!"
 // We'll need your EMAIL_FROM and its EMAIL_PASSWORD base64 encoded, you can use https://www.base64encode.org/
 #define EMAIL_FROM_BASE64 "aGFoYW5ldF8xQHBvbHlnb25kb29yLmNvbS5hdQ=="  // etienne@polygondoor.com.au
-#define EMAIL_PASSWORD_BASE64 "Smh+QHV+cXlMbmMh"  // 
+#define EMAIL_PASSWORD_BASE64 "a_base64_encoded_password"  // 
 
-int step_SMTP = 0;
-
-String from = "hahanet_1@polygondoor.com.au";
+#define FROM_STRING "FROM: " EMAIL_FROM  " <" EMAIL_FROM ">" 
 
 // Constructor /////////////////////////////////////////////////////////////////
 // Function that handles the creation and setup of instances
@@ -148,7 +146,7 @@ bool HackySoc::sendMessage(String recipient, String subject, String body) {
 
   bool try_again = true;
 
-  Serial.println(F(" >>>>> SENDING MESSAGE"));
+  Serial.println(F(" HackySoc >>>>> SENDING MESSAGE"));
 
   // Attempt to create TCP
   Serial.print("create TCP");
@@ -253,7 +251,7 @@ bool HackySoc::sendMessage(String recipient, String subject, String body) {
   // FROM
   Serial.println(""); Serial.print("Send FROM");
   do {
-    wifi->sendAndCheck("FROM: " +  from +  " <" +  from + ">" ) ? try_again = false : attempts++;
+    wifi->sendAndCheck(FROM_STRING ) ? try_again = false : attempts++;
     if ( attempts > max_atempts ) {
       Serial.println(F("Error setting FROM"));
       return false;
@@ -334,16 +332,13 @@ bool HackySoc::sendMessage(String recipient, String subject, String body) {
 
   try_again = true; attempts = 0;
 
-  // Release TCP
+  // Release TCP  
   Serial.println(""); Serial.print("Close TCP :)");
-  do {
-    wifi->releaseTCP() ? try_again = false : attempts++;
-    if ( attempts > max_atempts ) {
-      Serial.println(F("Could not release TCP"));
-      return false;
-    } Serial.print(".");
-  } while (try_again);
+  // Note: this is returning FALSE ... so there is some kind of bug in 
+  // the ESP8266 that either doesn't close the TCP connection,
+  // or doesn't report it correctly.
+  wifi->releaseTCP();
 
-  Serial.println(F(" >>>>> SENDING MESSAGE DONE"));
+  Serial.println(F(" END HackySoc >>>>> SENDING MESSAGE"));
   return true;
 }
