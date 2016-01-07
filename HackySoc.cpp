@@ -21,10 +21,10 @@
 
 // Email account details, and their BASE64 versions
 // Use services like https://www.base64encode.org/ to create the Base64 version of your email details
-#define EMAIL_FROM "hahanet_1@polygondoor.com.au"
-#define PASS "Jh~@u~qyLnc!"
-#define EMAIL_FROM_BASE64 "aGFoYW5ldF8xQHBvbHlnb25kb29yLmNvbS5hdQ=="
-#define EMAIL_PASSWORD_BASE64 "Smh+QHV+cXlMbmMh"
+#define EMAIL_FROM "test@polygondoor.com.au"
+#define PASS "dfgdfgsdfg"
+#define EMAIL_FROM_BASE64 "aGFoYW5ldF8xQHBsdfgsdb25kb29yLmNvbS5hdQ=="
+#define EMAIL_PASSWORD_BASE64 "Smh+QHsdfgdsfgMbmMh"
 
 #define FROM_STRING "FROM: " EMAIL_FROM  " <" EMAIL_FROM ">" 
 #define USER_STRING "USER " EMAIL_FROM
