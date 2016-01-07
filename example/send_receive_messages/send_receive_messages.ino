@@ -11,7 +11,7 @@
 #include <HackySoc.h>
 
 #define SSID        "electricityD6AA"
-#define PASSWORD    "passwordhere"
+#define PASSWORD    "eertertwertert"
 
 SoftwareSerial mySerial(10, 11); /* RX:D3, TX:D2 */ // This tells us which pins the ESP8266 is plugged into
 ESP8266 wifi(mySerial); // This manages WIFI communications
@@ -28,7 +28,7 @@ void setup(void)
     if (hackySoc.connectToAP(SSID, PASSWORD)) {
       
       // Send an email
-      hackySoc.sendMessage( "someone@somewhere.com", "[HACKYSOC] Yiihah! ", "I'm connected to WIFI and I can send emails!");
+      hackySoc.sendMessage( "someone@gmail.com", "[HACKYSOC] Yiihah! ", "I'm connected to WIFI and I can send emails!");
     }
 }
 
@@ -38,12 +38,16 @@ void loop() {
     if ( !wifi.checkAP() ) {
       Serial.println("RE-connecting to WIFI...");
       hackySoc.connectToAP(SSID, PASSWORD);
-    }
-
-    if ( hackySoc.getNewMessage() ) {
-      Serial.println(hackySoc.message);
+      
     } else {
-      Serial.println("There are no new messages");
+      // We are connected. Check to see if there is a new message
+      if ( hackySoc.getNewMessage() ) {
+        Serial.println(hackySoc.from);
+        Serial.println(hackySoc.subject);
+        Serial.println(hackySoc.message);
+      } else {
+        Serial.println("There are no new messages");
+      }
     }
 
     delay(5000);

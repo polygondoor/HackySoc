@@ -21,10 +21,10 @@
 
 // Email account details, and their BASE64 versions
 // Use services like https://www.base64encode.org/ to create the Base64 version of your email details
-#define EMAIL_FROM "someone@somewhere.com"
-#define PASS "youremailpassword"
-#define EMAIL_FROM_BASE64 "aGFoYW5ldF8xQHwerwer5kb29yLmNvbS5hdQ=="
-#define EMAIL_PASSWORD_BASE64 "Smh+werwerXlMbmMh"
+#define EMAIL_FROM "hahanet_1@polygondoor.com.au"
+#define PASS "Jh~@u~qyLnc!"
+#define EMAIL_FROM_BASE64 "aGFoYW5ldF8xQHBvbHlnb25kb29yLmNvbS5hdQ=="
+#define EMAIL_PASSWORD_BASE64 "Smh+QHV+cXlMbmMh"
 
 #define FROM_STRING "FROM: " EMAIL_FROM  " <" EMAIL_FROM ">" 
 #define USER_STRING "USER " EMAIL_FROM
@@ -167,6 +167,10 @@ int HackySoc::countInbox(void){
   messageCountString = messageCountString.substring(0,space);
   int messageCount = messageCountString.toInt();
 
+  // Quit the POP3 server
+  wifi->sendAndCheck( F("QUIT"), F("+OK")); // this seems to close the TCP connection
+  wifi->releaseTCP();
+
   if (messageCount) return messageCount;
 
   return 0;
@@ -262,15 +266,14 @@ bool HackySoc::getNewMessage(void){
 
     // Quit the POP3 server
     wifi->sendAndCheck( F("QUIT"), F("+OK")); // this seems to close the TCP connection
-    // wifi->releaseTCP();;
+    wifi->releaseTCP();
 
   } else {
     // there are no new messages
 
     // Quit the POP3 server
     wifi->sendAndCheck( F("QUIT"), F("+OK")); // this seems to close the TCP connection
-
-    // wifi->releaseTCP();
+    wifi->releaseTCP();
     return false;
 
   }
