@@ -28,7 +28,7 @@ void setup(void)
     if (hackySoc.connectToAP(SSID, PASSWORD)) {
       
       // Send an email
-      hackySoc.sendMessage( "edeleflie@gmail.com", "[HACKYSOC] Yiihah! ", "I'm connected to WIFI and I can send emails!");
+      hackySoc.sendMessage( "someone@somewhere.com", "[HACKYSOC] Yiihah! ", "I'm connected to WIFI and I can send emails!");
     }
 }
 
